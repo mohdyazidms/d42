@@ -8,7 +8,7 @@
 # ---- CONFIG ----
 BASE_URL="https://github.com/mohdyazidms/d42/tree/main"
 LINUX_AGENT="d42_linuxagent_x64"
-FREEBSD_AGENT=""
+FREEBSD_AGENT="d42_freebsd_x64_agent"
 INSTALL_DIR="/opt/device42"
 LOGFILE="/var/log/d42_agent_install.log"
 # ---- INITIAL CHECK ----
