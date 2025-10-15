@@ -6,8 +6,9 @@
 #  Date: 2025-10-07
 # ================================================================
 # ---- CONFIG ----
-GITEA_BASE_URL="https://github.com/mohdyazidms/d42/tree/main"
+BASE_URL="https://github.com/mohdyazidms/d42/tree/main"
 LINUX_AGENT="d42_linuxagent_x64"
+FREEBSD_AGENT=""
 INSTALL_DIR="/opt/device42"
 LOGFILE="/var/log/d42_agent_install.log"
 # ---- INITIAL CHECK ----
@@ -40,7 +41,7 @@ echo
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR" || exit 1
 # ---- DOWNLOAD AGENT ----
-AGENT_URL="$GITEA_BASE_URL/$AGENT_FILE"
+AGENT_URL="$BASE_URL/$AGENT_FILE"
 echo "Downloading agent from: $AGENT_URL"
 if command -v curl >/dev/null 2>&1; then
     curl -fsSL -o "$AGENT_FILE" "$AGENT_URL"
