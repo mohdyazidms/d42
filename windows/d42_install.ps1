@@ -5,7 +5,7 @@
 #>
 
 # --- CONFIGURATION SECTION ---
-$TaskName     = "Exabytes SPLA Compliance Task"
+$TaskName     = "ExabytesSPLAComplianceTask"
 $TaskDesc     = "Runs Microsoft product discovery task at 6:00 AM SGT"
 $ExeFileName  = "d42_winagent_x64.exe"
 $TargetFolder = "C:\ProgramData\Device42"
