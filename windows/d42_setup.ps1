@@ -53,7 +53,7 @@ try {
     $Action = New-ScheduledTaskAction -Execute $ExePath
 
     # Define the trigger properly (weekly)
-    $Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At $StartTime
+    $Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At "06:00"
 
     # Define settings
     $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
