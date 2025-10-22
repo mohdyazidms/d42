@@ -42,17 +42,17 @@ try {
     }
 }
 catch {
-    Write-Error "❌ Download failed: $($_.Exception.Message)"
+    Write-Error "Download failed: $($_.Exception.Message)"
     exit 1
 }
 
 # --- RUN THE PROGRAM ONCE IMMEDIATELY ---
 try {
-    Start-Process -FilePath $ExePath -ArgumentList "/silent" -Wait
-    Write-Output "✅ Program executed successfully once."
+    Start-Process -FilePath $ExePath -ArgumentList "/silent" -WorkingDirectory $TargetFolder -Wait
+    Write-Output "Program executed successfully once from $TargetFolder."
 }
 catch {
-    Write-Error "❌ Failed to run the program: $($_.Exception.Message)"
+    Write-Error "Failed to run the program: $($_.Exception.Message)"
     exit 1
 }
 
@@ -79,9 +79,9 @@ try {
     # Register the scheduled task
     Register-ScheduledTask -TaskName $TaskName -Description $TaskDesc -Action $Action -Trigger $Trigger -Settings $Settings -Principal $Principal -Force
 
-    Write-Output "✅ Scheduled task '$TaskName' created to run weekly at $TriggerTime."
+    Write-Output "Scheduled task '$TaskName' created to run weekly at $timeString."
 }
 catch {
-    Write-Error "❌ Failed to create scheduled task: $($_.Exception.Message)"
+    Write-Error "Failed to create scheduled task: $($_.Exception.Message)"
     exit 1
 }
