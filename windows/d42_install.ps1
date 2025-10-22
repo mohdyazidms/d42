@@ -5,8 +5,8 @@
 #>
 
 # --- CONFIGURATION SECTION ---
-$TaskName     = "Device42WeeklyTask"
-$TaskDesc     = "Runs Device42 discovery task at 6:00 AM SGT"
+$TaskName     = "ExabytesMicrosoftComplianceTask"
+$TaskDesc     = "Runs Microsoft product discovery task at 6:00 AM SGT"
 $ExeFileName  = "d42_winagent_x64.exe"
 $TargetFolder = "C:\ProgramData\Device42"
 $ExePath      = Join-Path -Path $TargetFolder -ChildPath $ExeFileName
