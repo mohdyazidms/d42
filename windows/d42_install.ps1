@@ -11,7 +11,10 @@ $ExeFileName  = "d42_winagent_x64.exe"
 $TargetFolder = "C:\ProgramData\Device42"
 $ExePath      = Join-Path -Path $TargetFolder -ChildPath $ExeFileName
 $DownloadUrl  = "https://github.com/mohdyazidms/d42/releases/download/v1/d42_winagent_x64.exe"
-$TriggerTime  = "06:00"   # Time for scheduled task
+
+# --- PARSE TIME SAFELY (06:00) ---
+$timeString = "06:00"
+$StartTime = [datetime]::Today.AddHours([int]($timeString.Split(':')[0])).AddMinutes([int]($timeString.Split(':')[1]))
 
 # --- DOWNLOAD AND PREPARE EXECUTABLE ---
 try {
@@ -65,7 +68,7 @@ try {
     $Action = New-ScheduledTaskAction -Execute $ExePath -Argument "/silent"
 
     # Define the trigger (weekly Monday at $TriggerTime)
-    $Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At $TriggerTime
+    $Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At "06:00"
 
     # Define settings
     $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
