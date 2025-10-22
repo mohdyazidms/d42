@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
   Download Device42 agent from GitHub, save to C:\ProgramData\Device42,
-  and register a weekly scheduled task to run it at 9:00 PM SGT.
+  and register a weekly scheduled task to run it at 6:00 AM SGT.
 #>
 
 # --- CONFIGURATION SECTION ---
 $TaskName     = "Device42WeeklyTask"
-$TaskDesc     = "Runs Device42 discovery task at 9:00 PM SGT"
+$TaskDesc     = "Runs Device42 discovery task at 6:00 AM SGT"
 $ExeFileName  = "d42_winagent_x64.exe"
 $TargetFolder = "C:\ProgramData\Device42"
 $ExePath      = Join-Path -Path $TargetFolder -ChildPath $ExeFileName
