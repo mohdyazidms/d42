@@ -1,40 +1,37 @@
 <#
 .SYNOPSIS
   Download Device42 agent from GitHub, save to C:\ProgramData\Device42,
-  and register a weekly scheduled task to run it at 6:00 AM SGT.
+  and register a weekly scheduled task to run it at 9:00 PM SGT.
 #>
 
 # --- CONFIGURATION SECTION ---
 $TaskName     = "Device42WeeklyTask"
-$TaskDesc     = "Runs Device42 discovery task at 6:00 AM SGT"
+$TaskDesc     = "Runs Device42 discovery task at 9:00 PM SGT"
 $ExeFileName  = "d42_winagent_x64.exe"
 $TargetFolder = "C:\ProgramData\Device42"
 $ExePath      = Join-Path -Path $TargetFolder -ChildPath $ExeFileName
-$StartTimeSGT = "06:00"
 $DownloadUrl  = "https://github.com/mohdyazidms/d42/releases/download/v1/d42_winagent_x64.exe"
+
+# --- PARSE TIME SAFELY (06:00) ---
+$timeString = "06:00"
+$StartTime = [datetime]::Today.AddHours([int]($timeString.Split(':')[0])).AddMinutes([int]($timeString.Split(':')[1]))
 
 # --- DOWNLOAD AND PREPARE EXECUTABLE ---
 try {
-    # Ensure modern TLS for GitHub
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    # Create target folder if it doesn't exist
     if (-not (Test-Path -Path $TargetFolder)) {
         New-Item -Path $TargetFolder -ItemType Directory -Force | Out-Null
     }
 
-    # Remove existing file if present
     if (Test-Path -Path $ExePath) {
         Remove-Item -Path $ExePath -Force
     }
 
-    # Set User-Agent header for GitHub
     $headers = @{ 'User-Agent' = 'PowerShell' }
 
-    # Download the file silently
     Invoke-WebRequest -Uri $DownloadUrl -OutFile $ExePath -Headers $headers -UseBasicParsing -ErrorAction Stop
 
-    # Validate file
     if (-not ((Test-Path -Path $ExePath) -and ((Get-Item $ExePath).Length -gt 0))) {
         throw "Download failed or file is empty: $ExePath"
     }
@@ -44,22 +41,30 @@ catch {
     exit 1
 }
 
-# --- CREATE THE SCHEDULED TASK ---
+# --- CREATE / RECREATE THE SCHEDULED TASK ---
 try {
-    # Define the action
+    # Remove existing task if found
+    $existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    if ($existingTask) {
+        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
+    }
+
+    # Define the action (run .exe directly)
     $Action = New-ScheduledTaskAction -Execute $ExePath
 
-    # Define the trigger
-    $Trigger = New-ScheduledTaskTrigger -Weekly -At $StartTimeSGT
+    # Define the trigger properly (weekly)
+    $Trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At $StartTime
 
-    # Ensure it runs if it missed the schedule
-    $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable
+    # Define settings
+    $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 
-    # Run under SYSTEM account with highest privileges
+    # Define SYSTEM principal
     $Principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -RunLevel Highest
 
-    # Register the task silently
+    # Register the task
     Register-ScheduledTask -TaskName $TaskName -Description $TaskDesc -Action $Action -Trigger $Trigger -Settings $Settings -Principal $Principal -Force
+
+    Write-Output "✅ Scheduled task '$TaskName' created successfully to run weekly at $timeString."
 }
 catch {
     Write-Error "❌ Failed to create scheduled task: $($_.Exception.Message)"
