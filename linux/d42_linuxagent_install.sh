@@ -1,93 +1,88 @@
 #!/bin/bash
-# ================================================================
-#  Device42 Linux agent installation
-#  Author: mohdyazidms
-#  Version: v1.0
-#  Date: 2025-10-07
-# ================================================================
-# ---- CONFIG ----
-BASE_URL="https://github.com/mohdyazidms/d42/tree/main"
-LINUX_AGENT="d42_linuxagent_x64"
-FREEBSD_AGENT="d42_freebsd_x64_agent"
+# Device42 Agent Installer Script (Full Scan Version)
+# Compatible with CentOS 7, AlmaLinux 8 & 9
+# Must be run as root
+
+set -e
+
+DOWNLOAD_URL="https://github.com/mohdyazidms/d42/releases/download/v1.4/d42_linuxagent_x64"
 INSTALL_DIR="/opt/device42"
-LOGFILE="/var/log/d42_agent_install.log"
-# ---- INITIAL CHECK ----
-mkdir -p "$(dirname "$LOGFILE")"
-exec > >(tee -a "$LOGFILE") 2>&1
-echo "=============================================================="
-echo " Device42 Agent Installer"
-echo "=============================================================="
-echo "Date: $(date)"
-echo "Log  : $LOGFILE"
-echo
-# ---- ROOT CHECK ----
+AGENT_FILE="d42_linuxagent_x64"
+AGENT_PATH="$INSTALL_DIR/$AGENT_FILE"
+CRON_JOB="/etc/cron.d/device42_agent"
+LOG_FILE="/var/log/device42_install.log"
+
+# --- Function to detect OS version ---
+detect_os() {
+    if [ -f /etc/centos-release ]; then
+        OS="CentOS"
+        VERSION=$(rpm -E %{rhel})
+    elif [ -f /etc/almalinux-release ]; then
+        OS="AlmaLinux"
+        VERSION=$(rpm -E %{rhel})
+    else
+        echo "Unsupported OS. Only CentOS 7 and AlmaLinux 8/9 are supported."
+        exit 1
+    fi
+    echo "Detected OS: $OS $VERSION"
+}
+
+# --- Ensure script runs as root ---
 if [ "$EUID" -ne 0 ]; then
-  echo " Please run this script as root (sudo)."
-  exit 1
+    echo "Please run this script as root."
+    exit 1
 fi
-# ---- OS DETECTION ----
-echo "Detecting OS type..."
-OS_TYPE=$(uname -s | tr '[:upper:]' '[:lower:]')
-if [[ "$OS_TYPE" == *"freebsd"* ]]; then
-    AGENT_FILE="$FREEBSD_AGENT"
-    echo " Detected OS: FreeBSD"
-else
-    AGENT_FILE="$LINUX_AGENT"
-    echo " Detected OS: Linux"
-fi
-echo "Agent selected: $AGENT_FILE"
-echo
-# ---- PREPARE INSTALL DIR ----
+
+# --- Detect OS ---
+detect_os
+
+# --- Prepare directory ---
 mkdir -p "$INSTALL_DIR"
-cd "$INSTALL_DIR" || exit 1
-# ---- DOWNLOAD AGENT ----
-AGENT_URL="$BASE_URL/$AGENT_FILE"
-echo "Downloading agent from: $AGENT_URL"
+cd "$INSTALL_DIR"
+
+# --- Download agent binary using curl or wget ---
+echo "Downloading Device42 Agent from $DOWNLOAD_URL ..."
 if command -v curl >/dev/null 2>&1; then
-    curl -fsSL -o "$AGENT_FILE" "$AGENT_URL"
+    curl -L -o "$AGENT_FILE" "$DOWNLOAD_URL"
 elif command -v wget >/dev/null 2>&1; then
-    wget -q -O "$AGENT_FILE" "$AGENT_URL"
+    wget -O "$AGENT_FILE" "$DOWNLOAD_URL"
 else
-    echo " Neither curl nor wget found. Please install one and rerun."
+    echo "Error: Neither curl nor wget is installed. Please install one and re-run this script."
     exit 1
 fi
-if [ ! -f "$AGENT_FILE" ]; then
-    echo " Download failed. File not found after download attempt."
-    exit 1
-fi
+
+# --- Set permission and ownership ---
 chmod +x "$AGENT_FILE"
-echo " Download completed and file made executable."
-echo
-# ---- USER CONFIRMATION ----
-read -rp "Proceed with Device42 Agent installation? (Y/N): " choice
-case "$choice" in
-  [Yy]* ) echo "Installing...";;
-  * ) echo "Installation aborted by user."; exit 0;;
-esac
-# ---- INSTALLATION ----
-echo "Running installation for: $AGENT_FILE"
-if [[ "$OS_TYPE" == *"freebsd"* ]]; then
-    ./"$AGENT_FILE"
-else
-    ./"$AGENT_FILE"
+chown root:root "$AGENT_FILE"
+echo "Agent file downloaded and permissions set."
+
+# --- Run installation (full scan mode) ---
+echo "Running Device42 Agent installation (including virtual machines)..."
+"$AGENT_PATH" | tee -a "$LOG_FILE"
+
+# --- Ensure cron is installed and running ---
+echo "Checking cron service..."
+if ! rpm -q cronie >/dev/null 2>&1; then
+    echo "Installing cronie..."
+    if [ "$VERSION" -eq 7 ]; then
+        yum install -y cronie
+    else
+        dnf install -y cronie
+    fi
 fi
-EXIT_CODE=$?
-if [ $EXIT_CODE -eq 0 ]; then
-    echo " Device42 Agent installation completed successfully."
-else
-    echo " Installation process exited with code $EXIT_CODE. Please review logs."
-fi
-echo
-# ---- CLEANUP ----
-read -rp "Remove installer file after installation? (Y/N): " cleanup
-if [[ "$cleanup" =~ ^[Yy]$ ]]; then
-    rm -f "$INSTALL_DIR/$AGENT_FILE"
-    echo " Installer file removed."
-else
-    echo " Installer file retained at: $INSTALL_DIR/$AGENT_FILE"
-fi
-echo
-echo "=============================================================="
-echo " Installation completed. Logs stored at: $LOGFILE"
-echo "=============================================================="
-exit 0
+
+systemctl enable crond
+systemctl start crond
+echo "Cron service verified."
+
+# --- Setup cronjob ---
+echo "Creating cron job for weekly run at 6:00 AM (Sunday)..."
+cat > "$CRON_JOB" <<EOF
+0 6 * * 0 root $INSTALL_DIR/$AGENT_FILE >> $LOG_FILE 2>&1
+EOF
+
+chmod 644 "$CRON_JOB"
+chown root:root "$CRON_JOB"
+echo "Cron job created: $CRON_JOB"
+
+echo "Installation (full scan) completed successfully!"
