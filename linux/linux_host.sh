@@ -78,7 +78,7 @@ echo "Cron service verified."
 # --- Setup cronjob ---
 echo "Creating cron job for weekly run at 6:00 AM (Sunday)..."
 cat > "$CRON_JOB" <<EOF
-0 6 * * 0 root $INSTALL_DIR/$AGENT_FILE --skip-virtual-machines >> $LOG_FILE 2>&1
+0 6 * * 0 root $INSTALL_DIR/$AGENT_FILE -skip-virtual-machines >> $LOG_FILE 2>&1
 EOF
 
 chmod 644 "$CRON_JOB"
