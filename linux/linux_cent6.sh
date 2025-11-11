@@ -65,7 +65,7 @@ echo "Cron service started and enabled."
 # --- Setup weekly cronjob (Sunday 6:00 AM) with timestamped logs ---
 echo "Creating cron job for weekly run..."
 cat > "$CRON_JOB" <<EOF
-0 6 * * 0 root $INSTALL_DIR/$AGENT_FILE --skip-virtual-machines 2>&1 | gawk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), \$0; fflush(); }' >> $LOG_FILE
+0 6 * * 0 root $INSTALL_DIR/$AGENT_FILE -skip-virtual-machines 2>&1 | gawk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), \$0; fflush(); }' >> $LOG_FILE
 EOF
 
 chmod 644 "$CRON_JOB"
